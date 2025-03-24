@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="Base.Theme.MobileApp">
+        <item name="colorPrimary">@color/dark_green</item>
+        <item name="colorPrimaryVariant">@color/light_green</item>
+    </style>
 
     <style name="Theme.MobileApp" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>
