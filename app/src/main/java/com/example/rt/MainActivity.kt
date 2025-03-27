@@ -1,6 +1,7 @@
-package com.example.mobile_app
+package com.example.rt
 
 import android.os.Bundle
+import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -16,5 +17,12 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+        // Get the username from the Intent
+        val username = intent.getStringExtra("username")
+
+        // Set the text of the TextView
+        val tvGreeting = findViewById<TextView>(R.id.tv_greeting)
+        tvGreeting.text = "Hello $username!"
     }
 }
