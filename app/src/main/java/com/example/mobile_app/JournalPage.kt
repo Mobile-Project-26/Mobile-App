@@ -1,4 +1,9 @@
 package com.example.mobile_app
+
+import android.content.ContentValues
+import android.content.Context
+import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteOpenHelper
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,27 +18,73 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.sql.Connection
-import java.sql.DriverManager
 
 class JournalPage : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            JournalScreen()
+            JournalScreen(this)
         }
     }
 }
 
+class DatabaseHelper(context: Context) :
+    SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+
+    companion object {
+        private const val DATABASE_NAME = "JournalDatabase.db"
+        private const val DATABASE_VERSION = 1
+        private const val TABLE_NAME = "journal"
+        private const val COLUMN_ID = "id"
+        private const val COLUMN_NOTE = "note"
+    }
+
+    override fun onCreate(db: SQLiteDatabase?) {
+        val createTableQuery = """
+            CREATE TABLE $TABLE_NAME (
+                $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT, 
+                $COLUMN_NOTE TEXT
+            )
+        """.trimIndent()
+        db?.execSQL(createTableQuery)
+    }
+
+    override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
+        db?.execSQL("DROP TABLE IF EXISTS $TABLE_NAME")
+        onCreate(db)
+    }
+
+    fun insertNote(note: String) {
+        writableDatabase.use { db ->
+            val values = ContentValues().apply {
+                put(COLUMN_NOTE, note)
+            }
+            db.insert(TABLE_NAME, null, values)
+        }
+    }
+
+    fun getAllNotes(): List<String> {
+        val notes = mutableListOf<String>()
+        readableDatabase.use { db ->
+            val cursor = db.query(TABLE_NAME, arrayOf(COLUMN_NOTE), null, null, null, null, null)
+            cursor.use {
+                while (it.moveToNext()) {
+                    notes.add(it.getString(0))
+                }
+            }
+        }
+        return notes
+    }
+}
+
 @Composable
-fun JournalScreen() {
+fun JournalScreen(context: Context) {
+    val dbHelper = remember { DatabaseHelper(context) }
     var newNote by remember { mutableStateOf("") }
-    var previousNotes by remember { mutableStateOf(listOf<String>()) }
+    var previousNotes by remember { mutableStateOf(emptyList<String>()) }
 
     LaunchedEffect(Unit) {
-        previousNotes = fetchNotesFromDatabase()
+        previousNotes = dbHelper.getAllNotes()
     }
 
     Column(
@@ -56,16 +107,19 @@ fun JournalScreen() {
             onValueChange = { newNote = it },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Write a new note...") },
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = Color.White,
-                cursorColor = Color.White
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.LightGray,
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
             )
         )
 
         Button(
             onClick = {
-                saveNoteToDatabase(newNote)
+                dbHelper.insertNote(newNote)
                 newNote = ""
+                previousNotes = dbHelper.getAllNotes()  // Refresh notes
             },
             modifier = Modifier.padding(top = 8.dp)
         ) {
@@ -95,38 +149,4 @@ fun JournalScreen() {
             }
         }
     }
-}
-
-fun fetchNotesFromDatabase(): List<String> {
-    return try {
-        val connection = getDatabaseConnection()
-        val statement = connection.createStatement()
-        val resultSet = statement.executeQuery("SELECT note FROM journal")
-        val notes = mutableListOf<String>()
-        while (resultSet.next()) {
-            notes.add(resultSet.getString("note"))
-        }
-        notes
-    } catch (e: Exception) {
-        e.printStackTrace()
-        emptyList()
-    }
-}
-
-fun saveNoteToDatabase(note: String) {
-    try {
-        val connection = getDatabaseConnection()
-        val statement = connection.prepareStatement("INSERT INTO journal (note) VALUES (?)")
-        statement.setString(1, note)
-        statement.executeUpdate()
-    } catch (e: Exception) {
-        e.printStackTrace()
-    }
-}
-
-fun getDatabaseConnection(): Connection {
-    val url = "url/ourdbname"
-    val user = "ourusername"
-    val password = "ourpassword"
-    return DriverManager.getConnection(url, user, password)
 }
