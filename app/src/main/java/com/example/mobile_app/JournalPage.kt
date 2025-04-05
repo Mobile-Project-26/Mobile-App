@@ -18,6 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class JournalPage : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,6 +86,7 @@ fun JournalScreen(context: Context) {
     var newNote by remember { mutableStateOf("") }
     var previousNotes by remember { mutableStateOf(emptyList<String>()) }
 
+    // Loading notes when the screen is first displayed
     LaunchedEffect(Unit) {
         previousNotes = dbHelper.getAllNotes()
     }
@@ -106,7 +110,7 @@ fun JournalScreen(context: Context) {
             value = newNote,
             onValueChange = { newNote = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Write a new note...") },
+            label = { Text("Write a new note") },
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.White,
                 unfocusedContainerColor = Color.LightGray,
@@ -117,9 +121,11 @@ fun JournalScreen(context: Context) {
 
         Button(
             onClick = {
-                dbHelper.insertNote(newNote)
-                newNote = ""
-                previousNotes = dbHelper.getAllNotes()  // Refresh notes
+                if (newNote.isNotBlank()) {
+                    dbHelper.insertNote(newNote)
+                    newNote = ""
+                    previousNotes = dbHelper.getAllNotes()
+                }
             },
             modifier = Modifier.padding(top = 8.dp)
         ) {
