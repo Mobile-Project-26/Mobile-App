@@ -1,4 +1,4 @@
-package com.example.mobile_app
+package eu.tutorials.loginsignupsql
 
 import android.content.Intent
 import android.os.Bundle
@@ -7,7 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.example.mobile_app.databinding.ActivitySignupBinding
+import eu.tutorials.loginsignupsql.databinding.ActivitySignupBinding
 
 class SignupActivity : AppCompatActivity() {
 
@@ -17,7 +17,6 @@ class SignupActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySignupBinding.inflate(layoutInflater)
-        enableEdgeToEdge()
         setContentView(binding.root)
 
         databaseHelper = DatabaseHelper(this)
@@ -26,22 +25,25 @@ class SignupActivity : AppCompatActivity() {
             val signupUsername = binding.signupUsername.text.toString()
             val signupPassword = binding.signupPassword.text.toString()
             signupDatabase(signupUsername, signupPassword)
+
         }
 
-        binding.loginRedirect.setOnClickListener {
+        binding.loginRedirect.setOnClickListener{
             val intent = Intent(this, LoginActivity::class.java)
             startActivity(intent)
             finish()
         }
     }
-    private fun signupDatabase(username: String, password: String) {
+
+    private fun signupDatabase(username: String, password: String){
         val insertedRowId = databaseHelper.insertUser(username, password)
-        if (insertedRowId != 1L) {
-            Toast.makeText(this, "Signup Succesful", Toast.LENGTH_SHORT).show()
+        if (insertedRowId != -1L){
+            Toast.makeText(this, "Signup Successful", Toast.LENGTH_SHORT).show()
             val intent = Intent(this, LoginActivity::class.java)
             startActivity(intent)
             finish()
-        } else {
+        }
+        else{
             Toast.makeText(this, "Signup Failed", Toast.LENGTH_SHORT).show()
         }
     }
